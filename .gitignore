@@ -1,0 +1,120 @@
+# Visual Studio 生成的文件
+*.obj
+*.ilk
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# 构建输出目录
+[Dd]ebug/
+[Rr]elease/
+[Bb]uild/
+[Oo]utput/
+
+# Visual Studio 工作目录
+.vs/
+
+# Visual Studio 用户设置
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# 编译输出目录（x86/x64）
+x86/
+x64/
+[Ww][Ii][Nn]32/
+
+# 测试输出
+*.testlog
+
+# 临时文件
+*.tmp
+*.temp
+*.cache
+
+# 备份文件
+*.bak
+*.old
+*.backup
+
+# 生成的文档
+*.chm
+*.help
+
+# 生成的压缩文件
+compressedIMG.nam
+*.zip
+*.rar
+*.7z
+
+# 环境变量和配置文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.ini
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 日志文件
+*.log
+*.out
+*.err
+
+# IDE 配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 第三方库（如果有单独的库目录）
+# [Ll]ibs/
+# [Ee]xternal/
+
+# 自定义构建脚本生成的文件
+*.generated.*
+
+# 其他可能的临时文件
+*~
+*#
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# 排除特定文件
+gray.jpg
+
+# 保留的文件（确保重要的配置和源文件不被忽略）
+!.gitignore
+!*.sln
+!*.vcxproj
+!*.vcxproj.filters
+!*.h
+!*.cpp
