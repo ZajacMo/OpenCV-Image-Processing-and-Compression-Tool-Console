@@ -1,13 +1,14 @@
-#include "Block.h"
+ï»¿#include "Block.h"
+
 Block::Block()
 {
-	//ÎªÑÕÉ«ºÍÍ¸Ã÷¶È¸³³õÖµ
+	// Initialize the colors to a sentinel value.
 	color[0][0] = color[0][1] = color[1][0] = color[1][1] = -1;
 }
 
 Block::Block(const cv::Point lt, const cv::Point rb)
 {
-	//Îª×óÉÏ½ÇºÍÓÒÏÂ½Ç¸³³õÖµ
+	// Store the corner coordinates.
 	this->lt = lt;
 	this->rb = rb;
 }

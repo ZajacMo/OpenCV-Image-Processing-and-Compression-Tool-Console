@@ -1,14 +1,14 @@
-#pragma once
+ï»¿#pragma once
 #include <opencv2/opencv.hpp>
 class Block
 {
 	friend class Compress_gray;
 protected:
 
-	//×óÉÏ½ÇºÍÓÒÏÂ½Ç×ø±ê
+	// Top-left and bottom-right corners of the block.
 	cv::Point lt, rb;
 
-	//Ã¿¸öÇøÓò¼ÇÂ¼µÄÑÕÉ«
+	// Colors recorded for the block: the four corners of the region.
 	uchar color[2][2];
 
 public:

@@ -1,10 +1,13 @@
-#pragma once
+ï»¿#pragma once
 #include <bitset>
 #include <vector>
 #include <fstream>
 #include <string.h>
 #include <cmath>
-#define PERLEN 1024//Ã¿¸övectorÖĞ´æ´¢µÄ¶ş½øÖÆ³¤¶È
+#include <stdexcept>
+
+// Number of bits stored in each element of the backing vector.
+#define PERLEN 1024
 
 class Bits {
 
@@ -12,43 +15,44 @@ class Bits {
 
 private:
 
-    //´æ´¢µÄ¶ş½øÖÆÄÚÈİ
+    // Binary payload accumulated during encoding.
     std::vector<std::bitset<PERLEN>> bits;
 
-    //¶ÁÈ¡µÄ¶ş½øÖÆÄÚÈİ
+    // Binary payload loaded from disk during decoding.
     char* loadedInfo;
 
 protected:
 
-    //bitsÖĞµÄvector³¤¶È
+    // Number of filled chunks in `bits`, plus the bit index within the last chunk.
     int vecLen, index;
 
-    //¶ÁÈ¡Ê±¶ş½øÖÆÎÄ±¾×Ü³¤¶È
+    // Total length (in characters) of the payload read from disk.
     long long readLen;
 
+    // Cursor into the payload read from disk.
     long long readIndex;
 
 protected:
 
     Bits();
 
-    //Îö¹¹º¯Êı£¬ÊÍ·ÅÄÚ´æ
+    // Destructor; releases the buffer allocated by init().
     ~Bits();
 
-    //¶ÁÈ¡ÎÄ¼şÄÚÈİ³õÊ¼»¯BitsÀà
+    // Loads a previously saved payload from disk (used when decoding).
     void init(const std::string& filename, const int& size = 2);
 
-    //½«intÀàĞÍ³¤¶ÈÎªlenµÄinfo×ª»¯Îª¶ş½øÖÆ£¬²¢Ğ´Èëbits
+    // Appends the low `len` bits of `info`, most significant bit first.
     void write(const int& info, const int& len);
 
-    //ÔÚbitsÖĞÌí¼ÓÒ»Î»1»ò0
+    // Appends a single 1 or 0 bit.
     void add(const std::bitset<1>& bit);
 
-    //½«bitsÖĞµÄ¶ş½øÖÆÄÚÈİ±£´æÎªÃûÎªfilenameµÄÎÄ¼ş
+    // Writes the accumulated payload to `filename`.
     void save(const std::string& filename);
 
-    //¶ÁÈ¡bitsÖĞµÄ³¤¶ÈÎªlenµÄ¶ş½øÖÆÄÚÈİ£¬×ª»¯ÎªintÀàĞÍ
-    int read(  const int& len);
+    // Reads `len` bits and returns them as an integer, most significant bit first.
+    int read(const int& len);
 
 };
 

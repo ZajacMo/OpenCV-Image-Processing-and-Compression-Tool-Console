@@ -1,4 +1,4 @@
-# Visual Studio Éú³ÉµÄÎÄ¼ş
+# Visual Studio ç”Ÿæˆçš„æ–‡ä»¶
 *.obj
 *.ilk
 *.pch
@@ -19,16 +19,16 @@
 *.svclog
 *.scc
 
-# ¹¹½¨Êä³öÄ¿Â¼
+# æ„å»ºè¾“å‡ºç›®å½•
 [Dd]ebug/
 [Rr]elease/
 [Bb]uild/
 [Oo]utput/
 
-# Visual Studio ¹¤×÷Ä¿Â¼
+# Visual Studio å·¥ä½œç›®å½•
 .vs/
 
-# Visual Studio ÓÃ»§ÉèÖÃ
+# Visual Studio ç”¨æˆ·è®¾ç½®
 *.suo
 *.ntvs*
 *.njsproj
@@ -36,35 +36,35 @@
 *.VC.db
 *.VC.opendb
 
-# ±àÒëÊä³öÄ¿Â¼£¨x86/x64£©
+# ç¼–è¯‘è¾“å‡ºç›®å½•ï¼ˆx86/x64ï¼‰
 x86/
 x64/
 [Ww][Ii][Nn]32/
 
-# ²âÊÔÊä³ö
+# æµ‹è¯•è¾“å‡º
 *.testlog
 
-# ÁÙÊ±ÎÄ¼ş
+# ä¸´æ—¶æ–‡ä»¶
 *.tmp
 *.temp
 *.cache
 
-# ±¸·İÎÄ¼ş
+# å¤‡ä»½æ–‡ä»¶
 *.bak
 *.old
 *.backup
 
-# Éú³ÉµÄÎÄµµ
+# ç”Ÿæˆçš„æ–‡æ¡£
 *.chm
 *.help
 
-# Éú³ÉµÄÑ¹ËõÎÄ¼ş
+# ç”Ÿæˆçš„å‹ç¼©æ–‡ä»¶
 compressedIMG.nam
 *.zip
 *.rar
 *.7z
 
-# »·¾³±äÁ¿ºÍÅäÖÃÎÄ¼ş
+# ç¯å¢ƒå˜é‡å’Œé…ç½®æ–‡ä»¶
 .env
 .env.local
 .env.development.local
@@ -72,33 +72,33 @@ compressedIMG.nam
 .env.production.local
 *.ini
 
-# ²Ù×÷ÏµÍ³ÎÄ¼ş
+# æ“ä½œç³»ç»Ÿæ–‡ä»¶
 .DS_Store
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# ÈÕÖ¾ÎÄ¼ş
+# æ—¥å¿—æ–‡ä»¶
 *.log
 *.out
 *.err
 
-# IDE ÅäÖÃÎÄ¼ş
+# IDE é…ç½®æ–‡ä»¶
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# µÚÈı·½¿â£¨Èç¹ûÓĞµ¥¶ÀµÄ¿âÄ¿Â¼£©
+# ç¬¬ä¸‰æ–¹åº“ï¼ˆå¦‚æœæœ‰å•ç‹¬çš„åº“ç›®å½•ï¼‰
 # [Ll]ibs/
 # [Ee]xternal/
 
-# ×Ô¶¨Òå¹¹½¨½Å±¾Éú³ÉµÄÎÄ¼ş
+# è‡ªå®šä¹‰æ„å»ºè„šæœ¬ç”Ÿæˆçš„æ–‡ä»¶
 *.generated.*
 
-# ÆäËû¿ÉÄÜµÄÁÙÊ±ÎÄ¼ş
+# å…¶ä»–å¯èƒ½çš„ä¸´æ—¶æ–‡ä»¶
 *~
 *#
 .project
@@ -108,13 +108,28 @@ $RECYCLE.BIN/
 .settings/
 *.sublime-workspace
 
-# ÅÅ³ıÌØ¶¨ÎÄ¼ş
+# æ’é™¤ç‰¹å®šæ–‡ä»¶
 gray.jpg
 
-# ±£ÁôµÄÎÄ¼ş£¨È·±£ÖØÒªµÄÅäÖÃºÍÔ´ÎÄ¼ş²»±»ºöÂÔ£©
+# ä¿ç•™çš„æ–‡ä»¶ï¼ˆç¡®ä¿é‡è¦çš„é…ç½®å’Œæºæ–‡ä»¶ä¸è¢«å¿½ç•¥ï¼‰
 !.gitignore
 !*.sln
 !*.vcxproj
 !*.vcxproj.filters
 !*.h
 !*.cpp
+# CMake build tree
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Compressed streams produced by the benchmark
+*.nam
+
+# ... but the reference test vector is part of the repository
+!tests/vectors/*.nam
+
+# Python bytecode
+__pycache__/
+*.py[cod]

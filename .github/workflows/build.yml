@@ -1,0 +1,62 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCV (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopencv-dev
+
+      - name: Configure OpenCV (Windows)
+        if: runner.os == 'Windows'
+        run: choco install --no-progress -y opencv
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Self test
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./build/Release/compression_tool.exe --selftest --output build
+          else
+            ./build/compression_tool --selftest --output build
+          fi
+
+  vector:
+    name: Verify the reference test vector
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify the reference vector against the documented format
+        run: python tools/verify_vector.py
+
+      - name: Check that all sources are valid UTF-8
+        run: python tools/convert_gbk_to_utf8.py --check

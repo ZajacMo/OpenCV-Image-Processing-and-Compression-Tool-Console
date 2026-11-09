@@ -1,187 +1,329 @@
-# OpenCV Í¼Ïñ´¦ÀíÓëÑ¹Ëõ¹¤¾ß / OpenCV Image Processing and Compression Tool
+# OpenCV Image Processing and Compression Tool (Console)
 
-## ÏîÄ¿¼ò½é / Project Introduction
-ÕâÊÇÒ»¸ö»ùÓÚOpenCV¿â¿ª·¢µÄ»Ò¶ÈÍ¼ÏñÑ¹ËõÓë½âÑ¹ÏµÍ³¡£¸ÃÏîÄ¿ÊµÏÖÁËÒ»ÖÖ»ùÓÚ·Ö¿éµÄÍ¼ÏñÑ¹ËõËã·¨£¬¿ÉÒÔÔÚ±£³ÖÍ¼ÏñÖÊÁ¿µÄÍ¬Ê±£¬ÓĞĞ§µØ¼õĞ¡Í¼ÏñÎÄ¼şµÄ´óĞ¡¡£ÏîÄ¿Ö§³ÖÑ¹Ëõ²ÎÊıµÄµ÷Õû£¬ÒÔÆ½ºâÑ¹ËõÂÊºÍÍ¼ÏñÖÊÁ¿¡£
+A block-based **lossy image codec** for 8-bit greyscale images, implemented in
+C++ with [OpenCV](https://opencv.org). The encoder groups pixels into
+rectangular blocks that can be reconstructed from their four corner colours by
+bilinear interpolation; a single tolerance parameter (`sigma`) trades
+compression ratio against image quality.
 
-This is a grayscale image compression and decompression system developed based on the OpenCV library. The project implements a block-based image compression algorithm that can effectively reduce the size of image files while maintaining image quality. It supports adjusting compression parameters to balance compression ratio and image quality.
+This is the console version of the project. A Qt GUI version lives in the
+[Qt repository](https://github.com/ZajacMo/OpenCV-Image-Processing-and-Compression-Tool-Qt).
 
-## ÏµÍ³¼Ü¹¹ / System Architecture
+> **Looking to reuse the codec?** Read **[ALGORITHM.md](ALGORITHM.md)**. It
+> specifies the on-disk format precisely enough to write an independent
+> decoder, and includes a reference test vector plus a from-scratch decoder
+> written only from that specification.
 
-### ºËĞÄÀàÉè¼Æ / Core Class Design
-ÏîÄ¿²ÉÓÃÃæÏò¶ÔÏóÉè¼Æ£¬Ö÷Òª°üº¬ÒÔÏÂ¼¸¸öºËĞÄÀà£º
+---
 
-The project adopts object-oriented design and mainly includes the following core classes:
+## Contents
 
-1. **Compress_gray**£ºÖ÷ÒªµÄÑ¹Ëõ/½âÑ¹Àà£¬¸ºÔğÍ¼ÏñµÄÑ¹Ëõ¡¢½âÑ¹¡¢±£´æºÍ¼ÓÔØ
-2. **Block**£ºÍ¼Ïñ¿éµÄ»ùÀà£¬¶¨ÒåÁË¿éµÄ»ù±¾ÊôĞÔºÍ²Ù×÷
-3. **RBlock**£º¿ÉÖØ¹¹µÄÍ¼Ïñ¿éÀà£¬¼Ì³Ğ×ÔBlock£¬ÊµÏÖÁË¾ßÌåµÄ¿éÅĞ¶ÏºÍÖØ½¨·½·¨
-4. **Bits**£º¶ş½øÖÆÊı¾İ´¦ÀíÀà£¬¸ºÔğ±àÂëÊı¾İµÄ´æ´¢ºÍ¶ÁĞ´
+- [Features](#features)
+- [How the codec works](#how-the-codec-works)
+- [Building](#building)
+- [Usage](#usage)
+- [Benchmark results](#benchmark-results)
+- [Output artifacts](#output-artifacts)
+- [Reference test vector](#reference-test-vector)
+- [Project layout](#project-layout)
+- [Limitations](#limitations)
+- [License](#license)
 
-1. **Compress_gray**: Main compression/decompression class responsible for image compression, decompression, saving and loading
-2. **Block**: Base class for image blocks, defining basic properties and operations of blocks
-3. **RBlock**: Reconstructable image block class, inheriting from Block, implementing specific block judgment and reconstruction methods
-4. **Bits**: Binary data processing class responsible for storing, reading and writing encoded data
+---
 
-### Ö÷ÒªÊı¾İÁ÷³Ì / Main Data Flow
-1. **Ñ¹ËõÁ÷³Ì**£º¶ÁÈ¡Í¼Ïñ ¡ú ·Ö¿é´¦Àí ¡ú ±àÂë ¡ú ±£´æÎªÑ¹ËõÎÄ¼ş
-2. **½âÑ¹Á÷³Ì**£º¶ÁÈ¡Ñ¹ËõÎÄ¼ş ¡ú ½âÂë ¡ú ÖØ½¨Í¼Ïñ¿é ¡ú Éú³É½âÑ¹Í¼Ïñ
+## Features
 
-1. **Compression process**: Read image ¡ú Block processing ¡ú Encoding ¡ú Save as compressed file
-2. **Decompression process**: Read compressed file ¡ú Decoding ¡ú Reconstruct image blocks ¡ú Generate decompressed image
+- **Block-based compression** â€” the image is partitioned into rectangles whose
+  interiors are reproducible from their corner colours.
+- **Adjustable quality** â€” a single `sigma` parameter controls how tolerant
+  the block matcher is, and therefore the compression ratio and PSNR.
+- **Greyscale, 8-bit** â€” the format stores dimensions as 16-bit values and one
+  byte per colour sample.
+- **Bit-level stream I/O** â€” the compressed stream is a flat sequence of `'0'`
+  and `'1'` characters.
+- **Benchmark mode** â€” compresses and decompresses a whole sample set across a
+  range of `sigma` values and reports ratio, timing and PSNR.
+- **Self test** â€” round-trips a deterministic synthetic image and asserts a
+  minimum quality, so the build can be verified without any input files.
+- **No third-party dependencies** beyond OpenCV itself; the command line
+  parser is hand-rolled.
 
-## ¹¦ÄÜÌØµã / Features
+---
 
-- **¸ßĞ§Ñ¹Ëõ**£º»ùÓÚ·Ö¿éµÄÑ¹ËõËã·¨£¬ÄÜ¹»ÓĞĞ§¼õĞ¡ÎÄ¼ş´óĞ¡
-- **¿Éµ÷²ÎÊı**£ºÍ¨¹ısigma²ÎÊı¿ØÖÆÑ¹ËõÖÊÁ¿ºÍÑ¹ËõÂÊµÄÆ½ºâ
-- **ĞÔÄÜÆÀ¹À**£ºÌá¹©PSNR£¨·åÖµĞÅÔë±È£©¼ÆËã£¬ÆÀ¹ÀÑ¹ËõÍ¼ÏñÖÊÁ¿
-- **ÅúÁ¿´¦Àí**£ºÖ§³ÖÅúÁ¿´¦Àí¶à¸öÍ¼Ïñ²¢Éú³ÉĞÔÄÜ±¨¸æ
+## How the codec works
 
-- **Efficient compression**: Block-based compression algorithm that can effectively reduce file size
-- **Adjustable parameters**: Control the balance between compression quality and compression ratio through the sigma parameter
-- **Performance evaluation**: Provide PSNR (Peak Signal-to-Noise Ratio) calculation to evaluate compressed image quality
-- **Batch processing**: Support batch processing of multiple images and generate performance reports
+1. **Scan** the image in raster order.
+2. **Grow a block** from the first uncovered pixel. A candidate rectangle is
+   accepted when every pixel inside it is within `sigma` of the bilinear
+   interpolation of its four corners. Growth proceeds diagonally, then
+   horizontally, then vertically.
+3. **Classify** â€” a rectangle of one pixel is stored as an *isolated pixel*;
+   anything larger is stored as a *rectangle* carrying its four corner colours.
+4. **Write** the dimensions, then for each row the encoded pixels, using a
+   marker bit, a variable-length kind code, a variable-width position delta and
+   the colour payload.
+5. **Decode** by reading the stream back into a per-pixel *encoding map* (the
+   values 0/1/2/3 mark untouched, rectangle start, rectangle end and isolated
+   pixel), then rediscovering each rectangle's extent and filling it by
+   interpolation.
 
-## ÏîÄ¿½á¹¹ / Project Structure
+`sigma` is the key parameter:
+
+| `sigma` | Effect |
+|---|---|
+| Small (1â€“5) | Only near-uniform regions become blocks. High PSNR, little or no gain â€” the stream can be *larger* than the original. |
+| Large (30â€“50) | Almost any region becomes a block. Large gains, visible quality loss. |
+
+The full details, including the exact bit layout and the decoder's extent
+recovery rules, are in **[ALGORITHM.md](ALGORITHM.md)**.
+
+---
+
+## Building
+
+### Requirements
+
+| Requirement | Version |
+|---|---|
+| Windows | 10 or later |
+| Visual Studio | 2019 or later (C++17) |
+| OpenCV | 4.x (developed and tested against 4.10.0) |
+| CMake | 3.10 or later (only for the CMake build) |
+
+The codec uses `QueryPerformanceCounter` for timing, so it is **Windows
+only**. The build systems reflect this: the CMake configuration warns when
+configured for another platform.
+
+### Visual Studio
+
+Open `test_openCV.sln` and build the `test_openCV` configuration, or from a
+Developer Command Prompt:
 
 ```
-test_openCV/
-©À©¤©¤ .vs/                # Visual StudioÅäÖÃÎÄ¼ş / Visual Studio configuration files
-©À©¤©¤ .vscode/            # VSCodeÅäÖÃÎÄ¼ş / VSCode configuration files
-©À©¤©¤ images/             # ²âÊÔÍ¼ÏñÎÄ¼ş¼Ğ / Test images folder
-©À©¤©¤ Compress_gray.cpp   # Ñ¹ËõÀàÊµÏÖ / Compression class implementation
-©À©¤©¤ Compress_gray.h     # Ñ¹ËõÀàÍ·ÎÄ¼ş / Compression class header file
-©À©¤©¤ Block.cpp           # Í¼Ïñ¿é»ùÀàÊµÏÖ / Image block base class implementation
-©À©¤©¤ Block.h             # Í¼Ïñ¿é»ùÀàÍ·ÎÄ¼ş / Image block base class header file
-©À©¤©¤ RBlock.cpp          # ¿ÉÖØ¹¹¿éÊµÏÖ / Reconstructable block implementation
-©À©¤©¤ RBlock.h            # ¿ÉÖØ¹¹¿éÍ·ÎÄ¼ş / Reconstructable block header file
-©À©¤©¤ Bits.cpp            # ¶ş½øÖÆ´¦ÀíÊµÏÖ / Binary processing implementation
-©À©¤©¤ Bits.h              # ¶ş½øÖÆ´¦ÀíÍ·ÎÄ¼ş / Binary processing header file
-©À©¤©¤ main.cpp            # Ö÷³ÌĞòÈë¿Ú / Main program entry
-©¸©¤©¤ test_openCV.sln     # Visual Studio½â¾ö·½°¸ÎÄ¼ş / Visual Studio solution file
+msbuild test_openCV.sln /p:Configuration=Release
 ```
 
-## ºËĞÄ¹¦ÄÜÏê½â / Detailed Core Functions
+The OpenCV libraries must be on the library path and its headers on the
+include path. The bundled `build_msvc.bat` shows the exact invocation used
+during development:
 
-### 1. Í¼ÏñÑ¹Ëõ / Image Compression
-
-Ñ¹Ëõ¹ı³ÌÖ÷ÒªÍ¨¹ı`Compress_gray`ÀàµÄ`compress()`·½·¨ÊµÏÖ¡£¸Ã·½·¨Ê×ÏÈ¶ÔÍ¼Ïñ½øĞĞ·Ö¿é´¦Àí£¬È»ºó¶ÔÃ¿¸ö¿é½øĞĞ±àÂë£¬×îºó½«±àÂëºóµÄÊı¾İ±£´æÎªÑ¹ËõÎÄ¼ş¡£
-
-The compression process is mainly implemented through the `compress()` method of the `Compress_gray` class. This method first processes the image in blocks, then encodes each block, and finally saves the encoded data as a compressed file.
-
-¹Ø¼ü²½Öè / Key steps:
-- Í¼ÏñÔ¤´¦Àí / Image preprocessing
-- ·Ö¿é²éÕÒºÍ±ê¼Ç / Block searching and marking
-- ¿é±àÂë / Block encoding
-- Êı¾İ´æ´¢ / Data storage
-
-### 2. Í¼Ïñ½âÑ¹ / Image Decompression
-
-½âÑ¹¹ı³ÌÍ¨¹ı`Compress_gray`ÀàµÄ`uncompress()`·½·¨ÊµÏÖ¡£¸Ã·½·¨´ÓÑ¹ËõÎÄ¼şÖĞ¶ÁÈ¡Êı¾İ£¬½âÂëºóÖØ½¨Í¼Ïñ¿é£¬×îºóÉú³ÉÍêÕûµÄ½âÑ¹Í¼Ïñ¡£
-
-The decompression process is implemented through the `uncompress()` method of the `Compress_gray` class. This method reads data from the compressed file, reconstructs image blocks after decoding, and finally generates a complete decompressed image.
-
-¹Ø¼ü²½Öè / Key steps:
-- ¶ÁÈ¡Ñ¹ËõÊı¾İ / Read compressed data
-- ½âÂë¿éĞÅÏ¢ / Decode block information
-- ÖØ½¨Í¼Ïñ¿é / Reconstruct image blocks
-- Éú³É½âÑ¹Í¼Ïñ / Generate decompressed image
-
-### 3. ĞÔÄÜÆÀ¹À / Performance Evaluation
-
-ÏîÄ¿Ìá¹©ÁË¶àÖÖĞÔÄÜÖ¸±êÆÀ¹À£º
-
-The project provides multiple performance metrics for evaluation:
-
-- **Ñ¹ËõÂÊ**£ºÑ¹ËõºóÎÄ¼ş´óĞ¡ÓëÔ­ÎÄ¼ş´óĞ¡µÄ±ÈÖµ
-- **´¦ÀíÊ±¼ä**£ºÑ¹ËõºÍ½âÑ¹¹ı³ÌµÄºÄÊ±
-- **PSNR**£º·åÖµĞÅÔë±È£¬ºâÁ¿Ñ¹ËõÍ¼ÏñÓëÔ­Ê¼Í¼ÏñµÄÏàËÆ¶È
-
-- **Compression ratio**: Ratio of compressed file size to original file size
-- **Processing time**: Time consumed by compression and decompression processes
-- **PSNR**: Peak Signal-to-Noise Ratio, measuring the similarity between compressed image and original image
-
-## Ê¹ÓÃ·½·¨ / Usage
-
-### ±àÒë»·¾³ / Compilation Environment
-- Visual Studio
-- OpenCV¿â / OpenCV library
-
-### »ù±¾ÓÃ·¨ / Basic Usage
-
-#### µ¥¸öÍ¼ÏñÑ¹ËõÓë½âÑ¹ / Single Image Compression and Decompression
-
-```cpp
-// Ñ¹Ëõ / Compression
-Compress_gray cg;
-cg.init_compress(cv::imread("./images/lena512.bmp", 0), 5);  // µÚ¶ş¸ö²ÎÊıÎªsigmaÖµ / The second parameter is sigma value
-cg.compress();
-cg.save("compressedIMG.nam");
-
-// ½âÑ¹ / Decompression
-Compress_gray ucg;
-ucg.init_uncompress("compressedIMG.nam");
-cv::Mat res = ucg.uncompress();
-cv::imshow("½âÑ¹Í¼Ïñ", res);  // "Decompressed Image"
-cv::waitKey(0);
+```
+build_msvc.bat
 ```
 
-#### ÅúÁ¿´¦ÀíÓëĞÔÄÜ²âÊÔ / Batch Processing and Performance Testing
+It produces `build/compression_tool.exe`.
 
-```cpp
-// ¶¨ÒåÒª²âÊÔµÄÍ¼ÏñºÍsigmaÖµ / Define images and sigma values for testing
-string fileName[] = {"100gray","197gray","baboonzyp512","barbarazyp512","broke256","decho256","f16","flightzyp512","lena512","lenazyp512"};
-int sigma[] = {1,5,10,20,30,50};
+### CMake
 
-// ÅúÁ¿´¦Àí²¢Êä³öĞÔÄÜ±¨¸æ / Batch processing and output performance report
-for(int i = 0; i < 10; i++) {
-    for(int j = 0; j < 6; j++) {
-        getRes(fileName[i], sigma[j]);
-    }
-}
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
 ```
 
-### ²ÎÊıËµÃ÷ / Parameter Description
+CMake locates OpenCV through `find_package(OpenCV REQUIRED)`. Point it at a
+non-standard installation with `-DOpenCV_DIR=/path/to/opencv/build`.
 
-- **sigmaÖµ**£º¿ØÖÆÑ¹ËõÖÊÁ¿ºÍÑ¹ËõÂÊµÄÆ½ºâ²ÎÊı
-  - sigmaÔ½Ğ¡£¬Ñ¹ËõÖÊÁ¿Ô½¸ß£¬µ«Ñ¹ËõÂÊÔ½µÍ
-  - sigmaÔ½´ó£¬Ñ¹ËõÖÊÁ¿Ô½µÍ£¬µ«Ñ¹ËõÂÊÔ½¸ß
+The executable lands in `build/` (or `build/Release/` for multi-config
+generators).
 
-- **sigma value**: Parameter controlling the balance between compression quality and compression ratio
-  - Smaller sigma: higher compression quality but lower compression ratio
-  - Larger sigma: lower compression quality but higher compression ratio
+### Running the self test
 
-## ĞÔÄÜÖ¸±êËµÃ÷ / Performance Metrics Description
+```
+compression_tool --selftest
+```
 
-ÔËĞĞÅúÁ¿²âÊÔÊ±£¬Êä³ö½á¹û°üº¬ÒÔÏÂÖ¸±ê£º
+This needs no input files: it generates a synthetic 64 Ã— 96 image, compresses
+it, decompresses it, checks the dimensions and asserts the round-trip PSNR is
+at least 20 dB. It exits non-zero on failure, so it works as a CI check. With
+CMake it is registered as a test:
 
-When running batch tests, the output results include the following metrics:
+```
+ctest --test-dir build -C Release --output-on-failure
+```
 
-| Ö¸±ê / Metric | ËµÃ÷ / Description |
-|--------------|-------------------|
-| Í¼ÏñÃû / Image name | ²âÊÔÍ¼ÏñµÄÎÄ¼şÃû / File name of the test image |
-| Ô­Í¼³ß´ç / Original size | Ô­Ê¼Í¼ÏñµÄ·Ö±æÂÊ / Resolution of the original image |
-| ÔÊĞíµÄÎó²î£¨sigma£© / Allowed error (sigma) | Ñ¹ËõÊ±Ê¹ÓÃµÄsigma²ÎÊıÖµ / Sigma parameter value used during compression |
-| Ñ¹Ëõºó´óĞ¡ / Compressed size | Ñ¹ËõÎÄ¼şµÄ´óĞ¡£¨×Ö½Ú£© / Size of the compressed file (bytes) |
-| Ñ¹ËõÂÊ / Compression ratio | Ñ¹ËõĞ§ÂÊ£¬Ô½Ğ¡±íÊ¾Ñ¹ËõĞ§¹ûÔ½ºÃ / Compression efficiency, smaller value indicates better compression |
-| Ñ¹ËõÊ±¼ä / Compression time | Ñ¹Ëõ¹ı³ÌÏûºÄµÄÊ±¼ä£¨Ãë£© / Time consumed by compression process (seconds) |
-| ½âÑ¹Ê±¼ä / Decompression time | ½âÑ¹¹ı³ÌÏûºÄµÄÊ±¼ä£¨Ãë£© / Time consumed by decompression process (seconds) |
-| PSNR | ·åÖµĞÅÔë±È£¬ºâÁ¿Í¼ÏñÖÊÁ¿£¬ÖµÔ½¸ß±íÊ¾ÖÊÁ¿Ô½ºÃ / Peak Signal-to-Noise Ratio, measuring image quality, higher value indicates better quality |
+---
 
-## ÓÅ»¯½¨Òé / Optimization Suggestions
+## Usage
 
-1. **¶àÏß³Ì´¦Àí**£º¿ÉÒÔ¿¼ÂÇÒıÈë¶àÏß³Ì´¦Àí´ó³ß´çÍ¼Ïñ£¬Ìá¸ß´¦ÀíËÙ¶È
-2. **Ñ¹ËõËã·¨ÓÅ»¯**£ºÌ½Ë÷¸ü¸ßĞ§µÄ¿é·Ö¸îºÍ±àÂë²ßÂÔ
-3. **ÄÚ´æ¹ÜÀí**£º¶ÔÓÚ´ó³ß´çÍ¼Ïñ£¬¿ÉÒÔÓÅ»¯ÄÚ´æÊ¹ÓÃ·½Ê½
-4. **É«²ÊÍ¼ÏñÖ§³Ö**£ºÄ¿Ç°Ö÷ÒªÖ§³Ö»Ò¶ÈÍ¼Ïñ£¬¿ÉÒÔÀ©Õ¹Ö§³Ö²ÊÉ«Í¼ÏñµÄÑ¹Ëõ
+```
+compression_tool [options]
 
-1. **Multi-threaded processing**: Consider introducing multi-threading to process large-sized images and improve processing speed
-2. **Compression algorithm optimization**: Explore more efficient block segmentation and encoding strategies
-3. **Memory management**: For large-sized images, optimize memory usage
-4. **Color image support**: Currently mainly supports grayscale images, can be extended to support color image compression
+  --input <dir>      Directory holding the source images (default: images)
+  --output <dir>     Directory the compressed streams are written to (default: .)
+  --images <list>    Comma separated image names, without extension
+                     (default: the built-in sample set)
+  --sigma <list>     Comma separated sigma values (default: 1,5,10,20,30,50)
+  --selftest         Run a synthetic round-trip check and exit
+  -h, --help         Show this message
+```
 
-## ×¢ÒâÊÂÏî / Notes
+Examples:
 
-1. È·±£ÒÑÕıÈ·ÅäÖÃOpenCV¿â / Ensure that the OpenCV library is correctly configured
-2. Ñ¹ËõÎÄ¼ş¸ñÊ½Îª×Ô¶¨ÒåµÄ.nam¸ñÊ½ / The compressed file format is a custom .nam format
-3. ²âÊÔÍ¼ÏñÓ¦·ÅÔÚimagesÄ¿Â¼ÏÂ / Test images should be placed in the images directory
-4. ½Ï´óµÄsigmaÖµ¿ÉÄÜµ¼ÖÂÍ¼ÏñÖÊÁ¿Ã÷ÏÔÏÂ½µ / Larger sigma values may cause significant degradation in image quality
+```
+compression_tool --selftest
+compression_tool --images lena512,f16 --sigma 5,20
+compression_tool --input images --output out --sigma 10
+```
+
+With no arguments the tool runs the full benchmark: the ten sample images in
+`images/` at six `sigma` values, which is 60 compress/decompress cycles.
+
+The output is a tab-separated table:
+
+```
+image          original size   sigma   compressed bits   ratio   compress time (s)   decompress time (s)   PSNR (dB)
+lena512.bmp    512*512         10      799631            0.3813  0.120487            0.010636              36.3887
+```
+
+**A note on `ratio` and `compressed bits`.** `compressed bits` counts the bits
+of actual payload. `ratio` divides that by the raw bit count of the image, so
+it is a *logical* compression ratio. The file written to disk is larger than
+that by a factor of eight, because the stream stores one ASCII character per
+bit rather than packing bits into bytes. See
+[ALGORITHM.md Â§8.2](ALGORITHM.md#82-the-stream-is-not-byte-packed).
+
+---
+
+## Benchmark results
+
+Measured on Windows 11 with MSVC 14.44 in Release mode, OpenCV 4.10.0.
+Reproduce with `compression_tool` using the default arguments.
+
+### lena512.bmp â€” a photographic image
+
+| sigma | compressed bits | ratio | PSNR (dB) |
+|---:|---:|---:|---:|
+| 1 | 3282134 | 1.5650 | 59.23 |
+| 5 | 1699187 | 0.8102 | 42.29 |
+| 10 | 799631 | 0.3813 | 36.39 |
+| 20 | 368150 | 0.1755 | 30.38 |
+| 30 | 226626 | 0.1081 | 26.69 |
+| 50 | 103842 | 0.0495 | 22.36 |
+
+### baboonzyp512.bmp â€” a highly detailed image
+
+| sigma | compressed bits | ratio | PSNR (dB) |
+|---:|---:|---:|---:|
+| 1 | 3512520 | 1.6749 | 67.26 |
+| 5 | 3161627 | 1.5076 | 46.81 |
+| 10 | 2543844 | 1.2130 | 38.48 |
+| 20 | 1689296 | 0.8055 | 31.26 |
+| 30 | 1194116 | 0.5694 | 27.30 |
+| 50 | 652517 | 0.3111 | 22.56 |
+
+### broke256.bmp â€” a piecewise-smooth image
+
+| sigma | compressed bits | ratio | PSNR (dB) |
+|---:|---:|---:|---:|
+| 1 | 600231 | 1.1448 | 54.95 |
+| 5 | 162361 | 0.3097 | 41.45 |
+| 10 | 50716 | 0.0967 | 36.06 |
+| 20 | 14391 | 0.0274 | 30.22 |
+| 30 | 5985 | 0.0114 | 26.68 |
+| 50 | 1588 | 0.0030 | 20.71 |
+
+Observations:
+
+- At `sigma = 1` the stream is **larger** than the raw image. The codec spends
+  bits describing block structure without gaining anything, so small `sigma`
+  values are not useful.
+- Detail-heavy images (baboon) compress far worse than smooth ones (broke) at
+  the same `sigma`, which is the expected behaviour for a corner-based
+  predictor.
+- Roughly, a `sigma` of 20 lands near 30 dB PSNR, which is a reasonable
+  working point for visual use.
+
+---
+
+## Output artifacts
+
+| Artifact | Description |
+|---|---|
+| `<name>_sigma<N>.nam` | The compressed stream for `<name>.bmp` at `sigma = N`. A text file of `'0'`/`'1'` characters. |
+| `tests/vectors/selftest.nam` | The reference stream used by the self test and by `tools/verify_vector.py`. |
+| `tests/vectors/selftest_decoded.pgm` | The expected decode of the above, as a binary (P5) greyscale PGM. |
+
+The tool does not write decoded images in normal operation; only the self test
+emits a PGM, so that the vector can be checked without an OpenCV dependency.
+
+---
+
+## Reference test vector
+
+`tests/vectors/` holds a complete vector: a compressed stream plus the
+expected decoded image. It exists so that an independent implementation can
+confirm it agrees with this codec.
+
+`tools/verify_vector.py` is a decoder written **only** from the specification
+in `ALGORITHM.md`. It needs nothing but a Python 3 interpreter:
+
+```
+python tools/verify_vector.py
+```
+
+```
+stream       : selftest.nam (4956 bits)
+decoded size : 64 x 96
+OK: all 6144 pixels match the reference image
+```
+
+Because that script is derived from the specification rather than from the C++
+code, it doubles as a check that `ALGORITHM.md` is accurate: if the
+specification and the implementation ever diverge, the pixel comparison fails.
+
+---
+
+## Project layout
+
+```
+â”œâ”€â”€ Compress_gray.h/.cpp     Core codec: encode, decode, PSNR, timing
+â”œâ”€â”€ Bits.h/.cpp              Bit-level stream reader and writer
+â”œâ”€â”€ Block.h/.cpp             Abstract block base class
+â”œâ”€â”€ RBlock.h/.cpp            Rectangle block: validity test, marking, reconstruction
+â”œâ”€â”€ main.cpp                 Command line front-end and benchmark driver
+â”œâ”€â”€ ALGORITHM.md             Format specification
+â”œâ”€â”€ CMakeLists.txt           CMake build
+â”œâ”€â”€ build_msvc.bat           Convenience MSVC build script
+â”œâ”€â”€ tools/
+â”‚   â”œâ”€â”€ convert_gbk_to_utf8.py   Encoding conversion (see below)
+â”‚   â””â”€â”€ verify_vector.py          Independent decoder for the reference vector
+â”œâ”€â”€ tests/vectors/           Reference test vector
+â”œâ”€â”€ images/                  Sample images
+â””â”€â”€ test_openCV.sln/.vcxproj Visual Studio project
+```
+
+### Source encoding
+
+The sources were originally written in the Chinese system code page (GBK) and
+are now UTF-8 with a BOM, which MSVC detects automatically. `tools/convert_gbk_to_utf8.py`
+performs the conversion and is idempotent; `--check` reports which files would
+change without touching them.
+
+---
+
+## Limitations
+
+- **Windows only** â€” timing uses `QueryPerformanceCounter`.
+- **Greyscale only** â€” colour images are not supported; the decoder always
+  produces a `CV_8UC1` image. See
+  [ALGORITHM.md Â§8.4](ALGORITHM.md#84-colour-images-are-not-supported).
+- **Lossy** â€” reconstructed interiors are interpolations, not the original
+  samples.
+- **The stream is not byte-packed** â€” one ASCII character per bit, so files are
+  eight times larger than the payload they carry.
+- **The decoder trusts the header** â€” a corrupt stream can request an
+  arbitrarily large allocation.
+- **Single image per stream** â€” there is no container or multi-image format.
+- **No entropy coding** â€” the stream is uncompressed bits; a general-purpose
+  compressor applied afterwards would reduce it substantially.
+
+The full list, with details, is in
+[ALGORITHM.md Â§8](ALGORITHM.md#8-known-issues).
+
+---
+
+## License
+
+MIT â€” see [LICENSE](LICENSE).
+
+Copyright (c) 2025 Zajac Mo.

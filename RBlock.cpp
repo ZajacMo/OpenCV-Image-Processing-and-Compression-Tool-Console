@@ -1,4 +1,4 @@
-#include "RBlock.h"
+ï»¿#include "RBlock.h"
 
 RBlock::RBlock() {
 }
@@ -20,47 +20,51 @@ RBlock::RBlock(const cv::Mat& img, const cv::Point lt, const cv::Point rb) :Bloc
 	color[1][1] = img.at<uchar>(rb.x, rb.y);
 }
 
+// Linear interpolation between two colour values.
 inline uchar RBlock::getMedian(const uchar& a, const uchar& b, const double rate) const {
 	return a + (b - a) * rate;
 }
 
+// Position of `i` within the interval [a, b], normalised to [0, 1].
 inline double RBlock::getGamma(const int& a, const int& b, const int& i) const {
 	if (b == a)
 		return 0;
 	return (i - a) / (double)(b - a);
 }
 
+// Decides whether the region spanned by lt..rb can be represented by the
+// bilinear interpolation of its four corner colours, within the tolerance `xgm`.
 bool RBlock::isBlock(const cv::Mat& img, bool** const isMarked, const  int& xgm)const {
-	//»ñÈ¡ËÄ¸ö½ÇµÄÑÕÉ«
+	// Read the four corner colours.
 	uchar point_color[2][3] = { {img.at<uchar>(lt.x, lt.y),					img.at<uchar>(lt.x, rb.y)},
 														{img.at<uchar>(rb.x, lt.y),			img.at<uchar>(rb.x, rb.y) } };
 
-	//±éÀúÃ¿Ò»ÐÐ
+	// Walk every row.
 	for (int i = lt.x; i <= rb.x; i++) {
 
-		//¼ÆËãiÔÚlt.xºÍrb.xÖ®¼äµÄ±ÈÀý
+		// Position of row i between lt.x and rb.x.
 		double gamma_i = getGamma(lt.x, rb.x, i);
 
-		//¼ÆËãiÔÚltºÍlbÖ®¼äµÄÑÕÉ«
+		// Interpolate the left edge colour at row i.
 		point_color[0][2] = getMedian(point_color[0][0], point_color[1][0], gamma_i);
 
-		//¼ÆËãiÔÚrtºÍrbÖ®¼äµÄÑÕÉ«
+		// Interpolate the right edge colour at row i.
 		point_color[1][2] = getMedian(point_color[0][1], point_color[1][1], gamma_i);
 
-		//±éÀúÃ¿Ò»ÁÐ
+		// Walk every column.
 		for (int j = lt.y; j <= rb.y; j++) {
 
-			//Èç¹ûÕâ¸öµãÒÑ¾­±»±ê¼Ç£¬¾Í·µ»Øfalse
+			// The pixel is already covered by another block.
 			if (isMarked[i][j])
 				return false;
 
-			//¼ÆËãjÔÚlt.yºÍrb.yÖ®¼äµÄ±ÈÀý
+			// Position of column j between lt.y and rb.y.
 			double gamma_j = getGamma(lt.y, rb.y, j);
 
-			//¼ÆËãjÔÚÁ½ÖÐ¼äµãÖ®¼äµÄÑÕÉ«
+			// Interpolate the expected colour at (i, j).
 			double gest = getMedian(point_color[0][2], point_color[1][2], gamma_j);
 
-			//Èç¹ûÑÕÉ«²î¾à´óÓÚxgm£¬¾Í·µ»Øfalse
+			// Reject the block when a pixel deviates by more than the tolerance.
 			if (abs(img.at<uchar>(i, j) - gest) > xgm)
 				return false;
 		}
@@ -68,6 +72,7 @@ bool RBlock::isBlock(const cv::Mat& img, bool** const isMarked, const  int& xgm)
 	return true;
 }
 
+// Marks every pixel of the block as covered.
 void RBlock::mark(bool** isMarked) const {
 	for (int i = lt.x; i <= rb.x; i++)
 		for (int j = lt.y; j <= rb.y; j++)
@@ -76,6 +81,7 @@ void RBlock::mark(bool** isMarked) const {
 
 
 
+// Reconstructs the block region from its four corner colours.
 void RBlock::regain(cv::Mat& img, uchar** encoded_img) {
 	if (lt == rb)
 	{
@@ -84,25 +90,25 @@ void RBlock::regain(cv::Mat& img, uchar** encoded_img) {
 	}
 	uchar point_color[2][3] = { {color[0][0], color[0][1]},
 														 {color[1][0], color[1][1]}};
-	//±éÀúÃ¿Ò»ÐÐ
+	// Walk every row.
 	for (int i = lt.x; i <= rb.x; i++) {
 
-		//¼ÆËãiÔÚlt.xºÍrb.xÖ®¼äµÄ±ÈÀý
+		// Position of row i between lt.x and rb.x.
 		double gamma_i = getGamma(lt.x, rb.x, i);
 
-		//¼ÆËãiÔÚltºÍlbÖ®¼äµÄÑÕÉ«
+		// Interpolate the left edge colour at row i.
 		point_color[0][2] = getMedian(point_color[0][0], point_color[1][0], gamma_i);
 
-		//¼ÆËãiÔÚrtºÍrbÖ®¼äµÄÑÕÉ«
+		// Interpolate the right edge colour at row i.
 		point_color[1][2] = getMedian(point_color[0][1], point_color[1][1], gamma_i);
 
-		//±éÀúÃ¿Ò»ÁÐ
+		// Walk every column.
 		for (int j = lt.y; j <= rb.y; j++) {
 
-			//¼ÆËãjÔÚlt.yºÍrb.yÖ®¼äµÄ±ÈÀý
+			// Position of column j between lt.y and rb.y.
 			double gamma_j = getGamma(lt.y, rb.y, j);
 
-			//¼ÆËãjÔÚÁ½ÖÐ¼äµãÖ®¼äµÄÑÕÉ«
+			// Write the interpolated colour.
 			img.at<uchar>(i, j) = getMedian(point_color[0][2], point_color[1][2], gamma_j);
 		}
 	}
